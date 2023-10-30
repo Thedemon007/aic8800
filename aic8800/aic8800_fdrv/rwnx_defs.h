@@ -30,6 +30,7 @@
 #include "rwnx_mu_group.h"
 #include "rwnx_platform.h"
 #include "rwnx_cmds.h"
+#include "rwnx_compat.h"
 
 #ifdef AICWF_SDIO_SUPPORT
 #include "aicwf_sdio.h"
@@ -56,6 +57,21 @@
 
 #define PS_SP_INTERRUPTED  255
 #define MAC_ADDR_LEN 6
+
+
+#ifndef IEEE80211_MAX_AMPDU_BUF
+#define IEEE80211_MAX_AMPDU_BUF                             0x100
+#endif
+#ifndef IEEE80211_HE_PHY_CAP6_TRIG_MU_BEAMFORMER_FB
+#define IEEE80211_HE_PHY_CAP6_TRIG_MU_BEAMFORMER_FB         0x08
+#endif
+#ifndef IEEE80211_HE_PHY_CAP6_TRIG_SU_BEAMFORMER_FB
+#define IEEE80211_HE_PHY_CAP6_TRIG_SU_BEAMFORMER_FB         0x04
+#endif
+#ifndef IEEE80211_HE_PHY_CAP3_RX_HE_MU_PPDU_FROM_NON_AP_STA
+#define IEEE80211_HE_PHY_CAP3_RX_HE_MU_PPDU_FROM_NON_AP_STA 0x40
+#endif
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0) || defined(CONFIG_VHT_FOR_OLD_KERNEL)
 enum nl80211_ac {
@@ -705,7 +721,7 @@ struct rwnx_hw {
     struct ieee80211_sta_vht_cap vht_cap_5G;
 #endif
 
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	bool wext_scan;
 	struct completion wext_scan_com;
 	struct list_head wext_scanre_list;

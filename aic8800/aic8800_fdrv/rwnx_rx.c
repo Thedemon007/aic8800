@@ -420,8 +420,12 @@ static void rwnx_rx_data_skb_forward(struct rwnx_hw *rwnx_hw, struct rwnx_vif *r
 	* If the receive is not processed inside an ISR, the softirqd must be woken explicitly to service the NET_RX_SOFTIRQ.
 	* * In 2.6 kernels, this is handledby netif_rx_ni(), but in earlier kernels, we need to do it manually.
 	*/
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) 
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0) 
 		netif_rx_ni(rx_skb);
+    #else
+		netif_rx(rx_skb);
+    #endif
 	#else
 		ulong flags;
 		netif_rx(rx_skb);
@@ -452,8 +456,13 @@ static bool rwnx_rx_data_skb(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
 
     if (amsdu) {
         int count;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+        ieee80211_amsdu_to_8023s(skb, &list, rwnx_vif->ndev->dev_addr,
+                                 RWNX_VIF_TYPE(rwnx_vif), 0, NULL, NULL, false);
+#else
         ieee80211_amsdu_to_8023s(skb, &list, rwnx_vif->ndev->dev_addr,
                                  RWNX_VIF_TYPE(rwnx_vif), 0, NULL, NULL);
+#endif
 
         count = skb_queue_len(&list);
         if (count > ARRAY_SIZE(rwnx_hw->stats.amsdus_rx))
@@ -594,7 +603,11 @@ static bool rwnx_rx_data_skb(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
             * * In 2.6 kernels, this is handledby netif_rx_ni(), but in earlier kernels, we need to do it manually.
             */
             #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+            #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
                 netif_rx_ni(rx_skb);
+            #else
+                netif_rx(rx_skb);
+            #endif
             #else
                 ulong flags;
                 netif_rx(rx_skb);
@@ -1524,7 +1537,11 @@ int reord_single_frame_ind(struct aicwf_rx_priv *rx_priv, struct recv_msdu *prfr
     * * In 2.6 kernels, this is handledby netif_rx_ni(), but in earlier kernels, we need to do it manually.
     */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     netif_rx_ni(skb);
+#else
+    netif_rx(skb);
+#endif
 #else
     ulong flags;
     netif_rx(skb);

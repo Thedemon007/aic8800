@@ -44,7 +44,7 @@
 #include "aicwf_txrxif.h"
 #include "aicwf_compat_8800dc.h"
 
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 #include "aicwf_wext_linux.h"
 #endif
 
@@ -1066,9 +1066,14 @@ static void rwnx_csa_finish(struct work_struct *ws)
         } else
             rwnx_txq_vif_stop(vif, RWNX_TXQ_STOP_CHAN, rwnx_hw);
         spin_unlock_bh(&rwnx_hw->cb_lock);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
-        cfg80211_ch_switch_notify(vif->ndev, &csa->chandef);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+                cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0, 0);
+#elif (LINUX_VERSION_CODE >=KERNEL_VERSION(5, 19, 2))
+                cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0);
+#else
+                cfg80211_ch_switch_notify(vif->ndev, &csa->chandef);
 #endif
+
         mutex_unlock(&vif->wdev.mtx);
         __release(&vif->wdev.mtx);
     }
@@ -2514,6 +2519,13 @@ int android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		goto exit;
     }
 #endif//Handle Android command
+    #if 0
+    else if(!strncasecmp(command, CMD_SET_REBOOT, strlen(CMD_SET_REBOOT))){
+        rwnx_send_reboot(g_rwnx_plat->usbdev->rwnx_hw);
+		ret = 0;
+		goto exit;
+	}
+    #endif
 
 
     bytes_written = handle_private_cmd(net, command, priv_cmd.total_len);
@@ -2778,16 +2790,14 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
         vif->is_p2p_vif = 1;
         break;
     case NL80211_IFTYPE_MESH_POINT:
+        INIT_LIST_HEAD(&vif->ap.mpath_list);
+        INIT_LIST_HEAD(&vif->ap.proxy_list);
+        vif->ap.create_path = false;
+        vif->ap.generation = 0;
+        vif->ap.mesh_pm = NL80211_MESH_POWER_ACTIVE;
+        vif->ap.next_mesh_pm = NL80211_MESH_POWER_ACTIVE;
+        // no break
     case NL80211_IFTYPE_AP:
-	if (type == NL80211_IFTYPE_MESH_POINT) {
-	    INIT_LIST_HEAD(&vif->ap.mpath_list);
-            INIT_LIST_HEAD(&vif->ap.proxy_list);
-            vif->ap.create_path = false;
-            vif->ap.generation = 0; 
-            vif->ap.mesh_pm = NL80211_MESH_POWER_ACTIVE;
-            vif->ap.next_mesh_pm = NL80211_MESH_POWER_ACTIVE;
-	}
-
         INIT_LIST_HEAD(&vif->ap.sta_list);
         memset(&vif->ap.bcn, 0, sizeof(vif->ap.bcn));
         break;
@@ -2829,9 +2839,18 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
         memcpy(vif->wdev.address, params->macaddr, ETH_ALEN);
     }
     else {
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 17, 0)
+        unsigned char mac_addr[6];
+        
+        memcpy(mac_addr, rwnx_hw->wiphy->perm_addr, ETH_ALEN);
+        mac_addr[5] ^= vif_idx;
+        memcpy(ndev->dev_addr, mac_addr, ETH_ALEN);
+        memcpy(vif->wdev.address, ndev->dev_addr, ETH_ALEN);
+#else
         memcpy(ndev->dev_addr, rwnx_hw->wiphy->perm_addr, ETH_ALEN);
         ndev->dev_addr[5] ^= vif_idx;
         memcpy(vif->wdev.address, ndev->dev_addr, ETH_ALEN);
+#endif
     }
 
 	AICWFDBG(LOGINFO, "interface add:%x %x %x %x %x %x\n", vif->wdev.address[0], vif->wdev.address[1],
@@ -2843,7 +2862,7 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
     } else
         vif->use_4addr = false;
 
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	aicwf_set_wireless_ext(ndev, rwnx_hw);
 #endif
 
@@ -3213,14 +3232,13 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
         vif->sta.external_auth = false;
         break;
     case NL80211_IFTYPE_MESH_POINT:
+        INIT_LIST_HEAD(&vif->ap.mpath_list);
+        INIT_LIST_HEAD(&vif->ap.proxy_list);
+        vif->ap.create_path = false;
+        vif->ap.generation = 0;
+        // no break
     case NL80211_IFTYPE_AP:
     case NL80211_IFTYPE_P2P_GO:
-	if (type == NL80211_IFTYPE_MESH_POINT) {
-		INIT_LIST_HEAD(&vif->ap.mpath_list);
-        	INIT_LIST_HEAD(&vif->ap.proxy_list);
-        	vif->ap.create_path = false;
-        	vif->ap.generation = 0; 	
-	}
         INIT_LIST_HEAD(&vif->ap.sta_list);
         memset(&vif->ap.bcn, 0, sizeof(vif->ap.bcn));
         break;
@@ -3458,6 +3476,9 @@ bool key_flag = false;
  *	when adding a group key.
  */
 static int rwnx_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                                                 int link_id,
+#endif
                                  u8 key_index, bool pairwise, const u8 *mac_addr,
                                  struct key_params *params)
 {
@@ -3551,6 +3572,10 @@ static int rwnx_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
  *
  */
 static int rwnx_cfg80211_get_key(struct wiphy *wiphy, struct net_device *netdev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                                                 int link_id,
+#endif
+
                                  u8 key_index, bool pairwise, const u8 *mac_addr,
                                  void *cookie,
                                  void (*callback)(void *cookie, struct key_params*))
@@ -3566,6 +3591,10 @@ static int rwnx_cfg80211_get_key(struct wiphy *wiphy, struct net_device *netdev,
  *	and @key_index, return -ENOENT if the key doesn't exist.
  */
 static int rwnx_cfg80211_del_key(struct wiphy *wiphy, struct net_device *netdev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                                                 int link_id,
+#endif
+
                                  u8 key_index, bool pairwise, const u8 *mac_addr)
 {
     struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -3603,6 +3632,9 @@ static int rwnx_cfg80211_del_key(struct wiphy *wiphy, struct net_device *netdev,
  */
 static int rwnx_cfg80211_set_default_key(struct wiphy *wiphy,
                                          struct net_device *netdev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                                                 int link_id,
+#endif
                                          u8 key_index, bool unicast, bool multicast)
 {
     RWNX_DBG(RWNX_FN_ENTRY_STR);
@@ -3615,6 +3647,9 @@ static int rwnx_cfg80211_set_default_key(struct wiphy *wiphy,
  */
 static int rwnx_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
                                               struct net_device *netdev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                                                 int link_id,
+#endif
                                               u8 key_index)
 {
     return 0;
@@ -3693,7 +3728,11 @@ static int rwnx_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
         key_params.key_len = sme->key_len;
         key_params.seq_len = 0;
         key_params.cipher = sme->crypto.cipher_group;
-        rwnx_cfg80211_add_key(wiphy, dev, sme->key_idx, false, NULL, &key_params);
+        rwnx_cfg80211_add_key(wiphy, dev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+                                0,
+#endif
+	sme->key_idx, false, NULL, &key_params);
     }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0) || defined(CONFIG_WPA3_FOR_OLD_KERNEL)
     else if ((sme->auth_type == NL80211_AUTHTYPE_SAE) &&
@@ -3777,7 +3816,7 @@ static int rwnx_cfg80211_disconnect(struct wiphy *wiphy, struct net_device *dev,
 	if(atomic_read(&rwnx_vif->drv_conn_state) == RWNX_DRV_STATUS_CONNECTED){
 		atomic_set(&rwnx_vif->drv_conn_state, RWNX_DRV_STATUS_DISCONNECTING);
 
-		#ifdef CONFIG_USB_WIRELESS_EXT
+		#ifdef CONFIG_USE_WIRELESS_EXT
 		memset(rwnx_hw->wext_essid, 0, 32);
 		#endif
 		key_flag = true;
@@ -3861,8 +3900,14 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
             sta->vif_idx = rwnx_vif->vif_index;
             sta->vlan_idx = sta->vif_idx;
             sta->qos = (params->sta_flags_set & BIT(NL80211_STA_FLAG_WME)) != 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+            sta->ht = params->link_sta_params.ht_capa ? 1 : 0;
+            sta->vht = params->link_sta_params.vht_capa ? 1 : 0;
+#else
             sta->ht = params->ht_capa ? 1 : 0;
             sta->vht = params->vht_capa ? 1 : 0;
+#endif
+
             sta->acm = 0;
             sta->key.hw_idx = 0;
 
@@ -4266,8 +4311,13 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy, struct net_device *
                     sta->vif_idx = rwnx_vif->vif_index;
                     sta->vlan_idx = sta->vif_idx;
                     sta->qos = (params->sta_flags_set & BIT(NL80211_STA_FLAG_WME)) != 0;
-                    sta->ht = params->ht_capa ? 1 : 0;
-                    sta->vht = params->vht_capa ? 1 : 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+                sta->ht = params->link_sta_params.ht_capa ? 1 : 0;
+                sta->vht = params->link_sta_params.vht_capa ? 1 : 0;
+#else
+                sta->ht = params->ht_capa ? 1 : 0;
+                sta->vht = params->vht_capa ? 1 : 0;
+#endif
                     sta->acm = 0;
                     for (tid = 0; tid < NX_NB_TXQ_PER_STA; tid++) {
                         int uapsd_bit = rwnx_hwq2uapsd[rwnx_tid2hwq[tid]];
@@ -4526,7 +4576,13 @@ static int rwnx_cfg80211_change_beacon(struct wiphy *wiphy, struct net_device *d
 /**
  * * @stop_ap: Stop being an AP, including stopping beaconing.
  */
+//#if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 19, 1)
+static int rwnx_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev, unsigned int link_id)
+#else
 static int rwnx_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev)
+#endif
+
 {
     struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
     struct rwnx_vif *rwnx_vif = netdev_priv(dev);
@@ -5045,8 +5101,13 @@ static int rwnx_cfg80211_dump_survey(struct wiphy *wiphy, struct net_device *net
  */
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
 static int rwnx_cfg80211_get_channel(struct wiphy *wiphy,
-                                     struct wireless_dev *wdev,
-                                     struct cfg80211_chan_def *chandef) {
+                                                                         struct wireless_dev *wdev,
+//#if LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 19, 1)
+                                                                         unsigned int link_id,
+#endif
+                                                                         struct cfg80211_chan_def *chandef)
+{
     struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
     struct rwnx_vif *rwnx_vif = container_of(wdev, struct rwnx_vif, wdev);
     struct rwnx_chanctx *ctxt;
@@ -5141,12 +5202,10 @@ static int rwnx_cfg80211_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
     /* Check if provided VIF is an AP or a STA one */
     switch (RWNX_VIF_TYPE(rwnx_vif)) {
         case NL80211_IFTYPE_AP_VLAN:
+            rwnx_vif = rwnx_vif->ap_vlan.master;
         case NL80211_IFTYPE_AP:
         case NL80211_IFTYPE_P2P_GO:
         case NL80211_IFTYPE_MESH_POINT:
-	    if (RWNX_VIF_TYPE(rwnx_vif) == NL80211_IFTYPE_AP_VLAN) {
-	    	rwnx_vif = rwnx_vif->ap_vlan.master;
-	    }
             ap = true;
             break;
         case NL80211_IFTYPE_STATION:
@@ -5394,8 +5453,13 @@ int rwnx_cfg80211_channel_switch(struct wiphy *wiphy,
         goto end;
     } else {
         INIT_WORK(&csa->work, rwnx_csa_finish);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-        cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count, false);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+        cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, params->block_tx, params->punct_bitmap);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+        cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, params->block_tx);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+        cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count, params->block_tx);
 #else
 		cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count);
 #endif
@@ -5796,11 +5860,9 @@ static int rwnx_fill_station_info(struct rwnx_sta *sta, struct rwnx_vif *vif,
 		break;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 	case FORMATMOD_HE_MU:
+		sinfo->rxrate.he_ru_alloc = rx_vect1->he.ru_size;
 	case FORMATMOD_HE_SU:
 	case FORMATMOD_HE_ER:
-		if (rx_vect1->format_mod == FORMATMOD_HE_MU) {
-			sinfo->rxrate.he_ru_alloc = rx_vect1->he.ru_size;
-		}
 		sinfo->rxrate.flags = RATE_INFO_FLAGS_HE_MCS;
 		sinfo->rxrate.mcs = rx_vect1->he.mcs;
 		sinfo->rxrate.he_gi = rx_vect1->he.gi_type;
@@ -8934,9 +8996,6 @@ if((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8801) ||
     /* Add an initial station interface */
     vif = rwnx_interface_add(rwnx_hw, "wlan%d", NET_NAME_UNKNOWN,
                                 NL80211_IFTYPE_STATION, NULL);
-
-    vif = rwnx_interface_add(rwnx_hw, "wlan-ap%d", NET_NAME_UNKNOWN,
-                                NL80211_IFTYPE_AP, NULL);
 
     #ifdef CONFIG_RWNX_MON_DATA
     /* Add an initial station interface */

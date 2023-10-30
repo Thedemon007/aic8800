@@ -17,6 +17,8 @@
 
 /* USB Device ID */
 #define USB_VENDOR_ID_AIC                0xA69C
+#define USB_VENDOR_ID_AIC_V2             0x368B
+#define USB_VENDOR_ID_TENDA              0x2604
 
 #ifndef CONFIG_USB_BT
 #define USB_PRODUCT_ID_AIC8800               0x8800
@@ -24,6 +26,9 @@
 #define USB_PRODUCT_ID_AIC8801				0x8801
 #define USB_PRODUCT_ID_AIC8800DC			0x88dc
 #define USB_PRODUCT_ID_AIC8800DW            0x88dd
+#define USB_PRODUCT_ID_AIC8800FC            0x88df
+#define USB_PRODUCT_ID_TENDA                0x0013
+#define USB_PRODUCT_ID_TENDA_U2             0x0014
 #endif
 
 enum AICWF_IC{

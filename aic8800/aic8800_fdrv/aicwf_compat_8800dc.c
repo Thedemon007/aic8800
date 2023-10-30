@@ -43,6 +43,7 @@ u32 syscfg_tbl_masked_8800dc[][3] = {
     {0x70002118, ((0x7 << 4) | (0x1 << 7)), ((0x2 << 4) | (0x1 << 7))},
     {0x70002104, ((0x3F << 0) | (0x1 << 6)), ((0x2 << 0) | (0x1 << 6))},
     {0x7000210C, ((0x3F << 0) | (0x1 << 6)), ((0x2 << 0) | (0x1 << 6))},
+    {0x70002170, (0xF << 0), (0x1 << 0)},
     {0x70002190, (0x3F << 0), (24 << 0)},
     {0x700021CC, ((0x7 << 4) | (0x1 << 7)), ((0x0 << 4) | (0x0 << 7))},
     {0x700010A0, (0x1 << 11), (0x1 << 11)},
@@ -82,7 +83,8 @@ u32 patch_tbl_wifisetting[][2] =
     {0x0100, 0x03021714}, //usb fc params(rx msg fc recover, rx msg fc trigger, wifi fc recover, wifi fc trigger)
     {0x0128, 0x140A0100}, //usb agg tx params(total cnt, aggr cnt, out en, global out nak)
 #endif //CONFIG_USB_TX_AGGR
-
+    {0x00b0, 0xAD180100},
+	{0x0084, 0x00000040},
 };
 
 u32 jump_tbl[][2] =
@@ -1386,55 +1388,57 @@ uint32_t txgain_map[96] =  {
     0x20c0cba8,
     0x20c0cbbb,
     0x20c0cbd2,
-    #else
-    0x00ffc772,
-    0x00ffc780,
-    0x00ffc872,
-    0x00ffc880,
-    0x00ffc970,
-    0x00ffc980,
-    0x00ffc990,
-    0x00ffca80,
-    0x00ffca9a,
-    0x00ffcb90,
-    0x00ffcc95,
-    0x00ffce80,
-    0x00ffcf80,
-    0x00ffcf80,
-    0x00ffcf80,
-    0x00ffcf80,
-    0x00ffc05b,
-    0x00ffc066,
-    0x00ffc070,
-    0x00ffc080,
-    0x00ffc175,
-    0x00ffc185,
-    0x00ffc272,
-    0x00ffc280,
-    0x00ffc290,
-    0x00ffc380,
-    0x00ffc472,
-    0x00ffc483,
-    0x00ffc572,
-    0x00ffc580,
-    0x00ffc590,
-    0x00ffc680,
+#else
+    //11b
+    0x00ffd780,
+    0x00ffd872,
+    0x00ffd880,
+    0x00ffd972,
+    0x00ffd980,
+    0x00ffda75,
+    0x00ffda86,
+    0x00ffdb77,
+    0x00ffdb86,
+    0x00ffdc78,
+    0x00ffdc89,
+    0x00ffdd79,
+    0x00ffdd89,
+    0x00ffde83,
+    0x00ffdf79,
+    0x00ffdf8b,
+    0x00ffd072,
+    0x00ffd072,
+    0x00ffd080,
+    0x00ffd172,
+    0x00ffd180,
+    0x00ffd272,
+    0x00ffd280,
+    0x00ffd36d,
+    0x00ffd379,
+    0x00ffd46d,
+    0x00ffd479,
+    0x00ffd572,
+    0x00ffd580,
+    0x00ffd672,
+    0x00ffd680,
+    0x00ffd772,
+    //high
     0x00ffc87d,
     0x00ffc88b,
     0x00ffc979,
     0x00ffc989,
     0x00ffca7d,
-    0x00ffca8d,
-    0x00ffcb7a,
-    0x00ffcb8a,
-    0x00ffcc7d,
-    0x00ffcc8d,
-    0x00ffcd79,
-    0x00ffcd89,
-    0x00ffce7d,
-    0x00ffce8d,
-    0x00ffcf80,
-    0x00ffcf99,
+    0x00ffca88,
+    0x00ffcc5e,
+    0x00ffcc69,
+    0x00ffcc78,
+    0x00ffcc85,
+    0x00ffcd70,
+    0x00ffcd80,
+    0x00ffce70,
+    0x00ffce80,
+    0x00ffcf7d,
+    0x00ffcf90,
     0x00ffc080,
     0x00ffc090,
     0x00ffc180,
@@ -1442,9 +1446,9 @@ uint32_t txgain_map[96] =  {
     0x00ffc27b,
     0x00ffc28b,
     0x00ffc37b,
-    0x00ffc38b,
-    0x00ffc480,
-    0x00ffc490,
+    0x00ffc390,
+    0x00ffc485,
+    0x00ffc495,
     0x00ffc579,
     0x00ffc589,
     0x00ffc679,
@@ -1456,17 +1460,17 @@ uint32_t txgain_map[96] =  {
     0x00ffc979,
     0x00ffc989,
     0x00ffca7d,
-    0x00ffca8d,
-    0x00ffcb7a,
-    0x00ffcb8a,
-    0x00ffcc7d,
-    0x00ffcc8d,
-    0x00ffcd79,
-    0x00ffcd89,
-    0x00ffce7d,
-    0x00ffce8d,
-    0x00ffcf80,
-    0x00ffcf99,
+    0x00ffca88,
+    0x00ffcc5e,
+    0x00ffcc69,
+    0x00ffcc78,
+    0x00ffcc85,
+    0x00ffcd70,
+    0x00ffcd80,
+    0x00ffce70,
+    0x00ffce80,
+    0x00ffce93,
+    0x00ffcf90,
     0x00ffc080,
     0x00ffc090,
     0x00ffc180,
@@ -1474,16 +1478,16 @@ uint32_t txgain_map[96] =  {
     0x00ffc27b,
     0x00ffc28b,
     0x00ffc37b,
-    0x00ffc38b,
-    0x00ffc480,
-    0x00ffc490,
+    0x00ffc390,
+    0x00ffc485,
+    0x00ffc495,
     0x00ffc579,
     0x00ffc589,
     0x00ffc679,
     0x00ffc689,
     0x00ffc780,
-    0x00ffc790
-    #endif
+    0x00ffc790,
+#endif
 };
 
 u32 patch_tbl_func[][2] =
@@ -1501,103 +1505,139 @@ u32 patch_tbl_rf_func[][2] =
 
 uint32_t txgain_table[32] =
 {
-    0xA4B22189,
+    0xA4B22189, //index 0
     0x00007825,
-    0xA4B2214B,
+    0xA4B2214B, //index 1
     0x00007825,
-    0xA4B2214F,
+    0xA4B2214F, //index 2
     0x00007825,
-    0xA4B221D5,
+    0xA4B221D5, //index 3
     0x00007825,
-    0xA4B221DC,
+    0xA4B221DC, //index 4
     0x00007825,
-    0xA4B221E5,
+    0xA4B221E5, //index 5
     0x00007825,
-    0xAC9221E5,
+    0xAC9221E5, //index 6
     0x00006825,
-    0xAC9221EF,
+    0xAC9221EF, //index 7
     0x00006825,
-    0xBC9221EE,
+    0xBC9221EE, //index 8
     0x00006825,
-    0xBC9221FF,
+    0xBC9221FF, //index 9
     0x00006825,
-    0xBC9221FF,
+    0xBC9221FF, //index 10
     0x00004025,
-    0xB792203F,
+    0xB792203F, //index 11
     0x00004026,
-    0xDC92203F,
+    0xDC92203F, //index 12
     0x00004025,
-    0xE692203F,
+    0xE692203F, //index 13
     0x00004025,
-    0xFF92203F,
+    0xFF92203F, //index 14
     0x00004035,
-    0xFFFE203F,
+    0xFFFE203F, //index 15
     0x00004832
 };
 
-uint32_t rxgain_table_24g_20m[64] = {
-    0x82f282d1,
+u32 txgain_table_1[32] =
+{
+    0x090E2011, //index 0
+    0x00004001,
+    0x090E2015, //index 1
+    0x00004001,
+    0x090E201B, //index 2
+    0x00004001,
+    0x110E2018, //index 3
+    0x00004001,
+    0x110E201E, //index 4
+    0x00004001,
+    0x110E2023, //index 5
+    0x00004001,
+    0x190E2021, //index 6
+    0x00004001,
+    0x190E202B, //index 7
+    0x00004001,
+    0x210E202B, //index 8
+    0x00004001,
+    0x230E2027, //index 9
+    0x00004001,
+    0x230E2031, //index 10
+    0x00004001,
+    0x240E2039, //index 11
+    0x00004001,
+    0x260E2039, //index 12
+    0x00004001,
+    0x2E0E203F, //index 13
+    0x00004001,
+    0x368E203F, //index 14
+    0x00004001,
+    0x3EF2203F, //index 15
+    0x00004001
+};
+
+u32 wifi_rxgain_table_24g_20m_8800dcdw[64] = {
+    0x82f282d1,//index 0
     0x9591a324,
     0x80808419,
     0x000000f0,
-    0x42f282d1,
+    0x42f282d1,//index 1
     0x95923524,
     0x80808419,
     0x000000f0,
-    0x22f282d1,
+    0x22f282d1,//index 2
     0x9592c724,
     0x80808419,
     0x000000f0,
-    0x02f282d1,
+    0x02f282d1,//index 3
     0x9591a324,
     0x80808419,
     0x000000f0,
-    0x06f282d1,
+    0x06f282d1,//index 4
     0x9591a324,
     0x80808419,
     0x000000f0,
-    0x0ef29ad1,
+    0x0ef29ad1,//index 5
     0x9591a324,
     0x80808419,
     0x000000f0,
-    0x0ef29ad3,
+    0x0ef29ad3,//index 6
     0x95923524,
     0x80808419,
     0x000000f0,
-    0x0ef29ad7,
+    0x0ef29ad7,//index 7
     0x9595a324,
     0x80808419,
     0x000000f0,
-    0x06f282d2,
-    0x95911124,
+    0x02f282d2,//index 8
+    0x95951124,
     0x80808419,
     0x000000f0,
-    0x06f282f4,
-    0x95911124,
+    0x02f282f4,//index 9
+    0x95951124,
     0x80808419,
     0x000000f0,
-    0x06f282e6,
-    0x9591a324,
-    0x80808419,
-    0x000000f0,
-    0x06f282e6,
+    0x02f282e6,//index 10
     0x9595a324,
     0x80808419,
     0x000000f0,
-    0x06f282e6,
+    0x02f282e6,//index 11
     0x9599a324,
     0x80808419,
     0x000000f0,
-    0x06f282e6,
-    0x959b5924,
+    0x02f282e6,//index 12
+    0x959da324,
     0x80808419,
     0x000000f0,
-    0x06f282e6,
+    0x02f282e6,//index 13
     0x959f5924,
     0x80808419,
     0x000000f0,
-    0x0ef29ae6,
+    0x06f282e6,//index 14
     0x959f5924,
+    0x80808419,
+    0x000000f0,
+    0x0ef29ae6,//index 15
+    0x959f592c,//////0x959f5924,           //loft [35:34]=3
     0x80808419,
     0x000000f0
 };
@@ -1605,67 +1645,67 @@ uint32_t rxgain_table_24g_20m[64] = {
 
 
 uint32_t rxgain_table_24g_40m[64] = {
-    0x83428151,
+    0x83428151,//index 0
     0x9631a328,
     0x80808419,
     0x000000f0,
-    0x43428151,
+    0x43428151,//index 1
     0x96323528,
     0x80808419,
     0x000000f0,
-    0x23428151,
+    0x23428151,//index 2
     0x9632c728,
     0x80808419,
     0x000000f0,
-    0x03428151,
+    0x03428151,//index 3
     0x9631a328,
     0x80808419,
     0x000000f0,
-    0x07429951,
+    0x07429951,//index 4
     0x9631a328,
     0x80808419,
     0x000000f0,
-    0x0f42d151,
+    0x0f42d151,//index 5
     0x9631a328,
     0x80808419,
     0x000000f0,
-    0x0f42d153,
+    0x0f42d153,//index 6
     0x96323528,
     0x80808419,
     0x000000f0,
-    0x0f42d157,
+    0x0f42d157,//index 7
     0x9635a328,
     0x80808419,
     0x000000f0,
-    0x07429952,
-    0x96311128,
+    0x03428152,//index 8
+    0x96351128,
     0x80808419,
     0x000000f0,
-    0x07429974,
-    0x96311128,
+    0x03428174,//index 9
+    0x96351128,
     0x80808419,
     0x000000f0,
-    0x07429966,
-    0x9631a328,
-    0x80808419,
-    0x000000f0,
-    0x07429966,
+    0x03428166,//index 10
     0x9635a328,
     0x80808419,
     0x000000f0,
-    0x07429966,
+    0x03428166,//index 11
     0x9639a328,
     0x80808419,
     0x000000f0,
-    0x07429966,
-    0x963b5928,
+    0x03428166,//index 12
+    0x963da328,
     0x80808419,
     0x000000f0,
-    0x07429966,
+    0x03428166,//index 13
     0x963f5928,
     0x80808419,
     0x000000f0,
-    0x0f42d166,
+    0x07429966,//index 14
+    0x963f5928,
+    0x80808419,
+    0x000000f0,
+    0x0f42d166,//index 15
     0x963f5928,
     0x80808419,
     0x000000f0
@@ -1796,6 +1836,8 @@ void aicwf_patch_config_8800dc(struct rwnx_hw *rwnx_hw)
        AICWFDBG(LOGINFO, "wifisetting_cfg_addr=%x, ldpc_cfg_addr=%x, agc_cfg_addr=%x, txgain_cfg_addr=%x\n", wifisetting_cfg_addr, ldpc_cfg_addr, agc_cfg_addr, txgain_cfg_addr);
 
         for (cnt = 0; cnt < patch_tbl_wifisetting_num; cnt++) {
+            printk("patch %x = %x\n", wifisetting_cfg_addr + patch_tbl_wifisetting[cnt][0],
+                patch_tbl_wifisetting[cnt][1]);
             if ((ret = rwnx_send_dbg_mem_write_req(rwnx_hw, wifisetting_cfg_addr + patch_tbl_wifisetting[cnt][0], patch_tbl_wifisetting[cnt][1]))) {
                 AICWFDBG(LOGERROR, "wifisetting %x write fail\n", patch_tbl_wifisetting[cnt][0]);
             }
@@ -1898,7 +1940,10 @@ int aicwf_set_rf_config_8800dc(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_c
 		if ((ret = rwnx_send_rf_config_req(rwnx_hw, 0,	1, (u8_l *)txgain_table, 128)))
 			return -1;
 
-		if ((ret = rwnx_send_rf_config_req(rwnx_hw, 0,	0, (u8_l *)rxgain_table_24g_20m, 256)))
+        if ((ret = rwnx_send_rf_config_req(rwnx_hw, 16,	1, (u8_l *)txgain_table_1, 128)))
+			return -1;
+
+		if ((ret = rwnx_send_rf_config_req(rwnx_hw, 0,	0, (u8_l *)wifi_rxgain_table_24g_20m_8800dcdw, 256)))
 			return -1;
 
 		if ((ret = rwnx_send_rf_config_req(rwnx_hw, 32,  0, (u8_l *)rxgain_table_24g_40m, 256)))
@@ -1973,6 +2018,7 @@ void system_config_8800dc(struct rwnx_hw *rwnx_hw){
     int syscfg_num;
     int ret, cnt;
     const u32 mem_addr = 0x40500000;
+    const u32 cache_mem_addr = 0x40100020;
     struct dbg_mem_read_cfm rd_mem_addr_cfm;
 
     ret = rwnx_send_dbg_mem_read_req(rwnx_hw, mem_addr, &rd_mem_addr_cfm);
@@ -1985,6 +2031,22 @@ void system_config_8800dc(struct rwnx_hw *rwnx_hw){
     if (((rd_mem_addr_cfm.memdata >> 25) & 0x01UL) == 0x00UL) {
         chip_mcu_id = 1;
     }
+
+    if (chip_mcu_id) {
+        ret = rwnx_send_dbg_mem_read_req(rwnx_hw, cache_mem_addr, &rd_mem_addr_cfm);
+        if (ret) {
+            AICWFDBG(LOGERROR, "%x rd fail: %d\n", mem_addr, ret);
+            return;
+        }
+        rd_mem_addr_cfm.memdata |= 0x01;
+        ret = rwnx_send_dbg_mem_write_req(rwnx_hw, cache_mem_addr, rd_mem_addr_cfm.memdata);
+
+        if (ret) {
+            AICWFDBG(LOGERROR, "%x write fail: %d\n", cache_mem_addr, ret);
+            return;
+        }
+    }
+
 
     ret = rwnx_send_dbg_mem_read_req(rwnx_hw, 0x00000020, &rd_mem_addr_cfm);
     if (ret) {

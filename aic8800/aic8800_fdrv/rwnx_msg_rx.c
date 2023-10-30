@@ -26,7 +26,7 @@
 #include "rwnx_events.h"
 #include "rwnx_compat.h"
 #include "aicwf_txrxif.h"
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 #include "aicwf_wext_linux.h"
 #endif
 
@@ -616,7 +616,7 @@ static inline int rwnx_rx_scanu_start_cfm(struct rwnx_hw *rwnx_hw,
     RWNX_DBG(RWNX_FN_ENTRY_STR);
 
     if (rwnx_hw->scan_request 
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 		&& !rwnx_hw->wext_scan) {
 #else
 		){
@@ -631,7 +631,7 @@ static inline int rwnx_rx_scanu_start_cfm(struct rwnx_hw *rwnx_hw,
     } 
 
 
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	else if(rwnx_hw->wext_scan){
     	rwnx_hw->wext_scan = 0;
 		AICWFDBG(LOGDEBUG, "%s rwnx_hw->wext_scan done!!\r\n", __func__);
@@ -665,7 +665,7 @@ static inline int rwnx_rx_scanu_result_ind(struct rwnx_hw *rwnx_hw,
 	int ssid_len = 0;
 	int freq = 0;
 	
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	struct scanu_result_wext *scan_re_wext;
 #endif
 
@@ -704,7 +704,7 @@ static inline int rwnx_rx_scanu_result_ind(struct rwnx_hw *rwnx_hw,
 		ssid = NULL;
 		//print scan result info end
 		
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 		if(rwnx_hw->wext_scan){
 			
 			scan_re_wext = (struct scanu_result_wext *)vmalloc(sizeof(struct scanu_result_wext));
@@ -958,8 +958,17 @@ static inline int rwnx_rx_sm_connect_ind(struct rwnx_hw *rwnx_hw,
         struct cfg80211_roam_info info;
         memset(&info, 0, sizeof(info));
         if (rwnx_vif->ch_index < NX_CHAN_CTXT_CNT)
-            info.channel = rwnx_hw->chanctx_table[rwnx_vif->ch_index].chan_def.chan;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
+			info.channel = rwnx_hw->chanctx_table[rwnx_vif->ch_index].chan_def.chan;
+#else
+			info.links[0].channel = rwnx_hw->chanctx_table[rwnx_vif->ch_index].chan_def.chan;
+#endif//LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)    
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
         info.bssid = (const u8 *)ind->bssid.array;
+#else
+        info.links[0].bssid = (const u8 *)ind->bssid.array;;
+#endif//LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
         info.req_ie = req_ie;
         info.req_ie_len = ind->assoc_req_ie_len;
         info.resp_ie = rsp_ie;

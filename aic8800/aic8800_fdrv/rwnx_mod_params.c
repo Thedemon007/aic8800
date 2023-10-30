@@ -34,7 +34,7 @@ struct rwnx_mod_params rwnx_mod_params = {
     COMMON_PARAM(vht_on, true, true)
     COMMON_PARAM(he_on, true, true)
     COMMON_PARAM(mcs_map, IEEE80211_VHT_MCS_SUPPORT_0_9, IEEE80211_VHT_MCS_SUPPORT_0_9)
-    COMMON_PARAM(he_mcs_map, IEEE80211_HE_MCS_SUPPORT_0_9, IEEE80211_HE_MCS_SUPPORT_0_9)
+    COMMON_PARAM(he_mcs_map, IEEE80211_HE_MCS_SUPPORT_0_11, IEEE80211_HE_MCS_SUPPORT_0_11)
     COMMON_PARAM(he_ul_on, false, false)
     COMMON_PARAM(ldpc_on, true, true)
     COMMON_PARAM(stbc_on, true, true)
@@ -278,7 +278,7 @@ void rwnx_get_countrycode_channels(struct wiphy *wiphy,
 	int end_freq = 0;
 	int center_freq = 0;
 	char channel[4];
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
 	int support_freqs_counter = 0; 
 #endif
@@ -300,7 +300,7 @@ void rwnx_get_countrycode_channels(struct wiphy *wiphy,
 				end_freq = regdomain->reg_rules[rule_index].freq_range.end_freq_khz/1000;
 				center_freq = sband->channels[channel_index].center_freq;
 				if((center_freq - 10) >= start_freq && (center_freq + 10) <= end_freq){
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 					rwnx_hw->support_freqs[support_freqs_counter++] = center_freq;
 #endif
 					sprintf(channel, "%d",ieee80211_frequency_to_channel(center_freq));
@@ -318,7 +318,7 @@ void rwnx_get_countrycode_channels(struct wiphy *wiphy,
 			}
 		}
 	}
-#ifdef CONFIG_USB_WIRELESS_EXT
+#ifdef CONFIG_USE_WIRELESS_EXT
 	rwnx_hw->support_freqs_number = support_freqs_counter;
 #endif
 	AICWFDBG(LOGINFO, "%s support channel:%s\r\n", __func__, ccode_channels);

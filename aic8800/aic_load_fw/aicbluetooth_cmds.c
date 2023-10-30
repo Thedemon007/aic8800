@@ -13,7 +13,10 @@
  */
 
 #include <linux/list.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
 #include <stddef.h>
+#endif
 #include "aicbluetooth_cmds.h"
 #include "aic_txrxif.h"
 #include "aicwf_usb.h"
